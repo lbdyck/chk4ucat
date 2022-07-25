@@ -1,0 +1,66 @@
+  /* --------------------  rexx procedure  -------------------- *
+  | Name:      chk4ucat                                        |
+  |                                                            |
+  | Function:  Check ALL online volumes for uncataloged        |
+  |            datasets                                        |
+  |                                                            |
+  | Syntax:    %chk4ucat                                       |
+  |                                                            |
+  | Usage Notes: suggest running in batch                      |
+  |                                                            |
+  | Dependencies:  vtoc command from file 112                  |
+  |                                                            |
+  | Author:    Lionel B. Dyck                                  |
+  |                                                            |
+  | History:  (most recent on top)                             |
+  |            2022/07/25 LBD - Creation                       |
+  |                                                            |
+  * ---------------------------------------------------------- */
+  rcode = isfcalls('ON')
+  ISFDELAY = 5 /* change to large numbers of dasd volumes */
+  ISFCONS  = 'chk4ucat'
+  command = 'd u,dasd,online,,99999'
+  address SDSF "ISFEXEC '/"Command"' (WAIT)"
+  hit = 0
+  do vi = 1 to ISFULOG.0
+    if word(isfulog.vi,1) = 'IEE452I' then leave
+    if word(isfulog.vi,1) = 'UNIT' then do
+      hit = 1
+      iterate
+    end
+    if hit = 0 then iterate
+    volser = word(isfulog.vi,4)
+    say ' '
+    say copies('-',70)
+    say 'Checking volser:' volser
+    say copies('-',70)
+    x = check_vol(volser)
+  end
+  rcode = isfcalls('OFF')
+  Exit 0
+
+Check_vol:
+  arg vol
+  call outtrap 'dsns.'
+  'vtoc' vol
+  if rc = 0 then do
+    call outtrap 'off'
+    do i = 1 to dsns.0
+      if word(dsns.i,1) = 'ALLOC' then iterate
+      if word(dsns.i,1) = 'TOTALS' then leave
+      parse value dsns.i with . 62 dsn .
+      if strip(dsn) = '' then leave
+      x = listdsi("'"strip(dsn)"'" 'NORECALL')
+      if sysdsorg = 'VS' then iterate
+      if vol /= sysvolume then do
+        say left(dsn,44) 'Cat Vol:' sysvolume 'Curr Vol:' vol
+        iterate
+      end
+      if right(dsn,13) = 'VTOCIX.'vol then iterate
+      if x < 16 then iterate
+      say 'bad dsn:' left(dsn,44) sysreason sysmsglvl2
+    end
+  end
+Done:
+  drop dsns.
+  return 0

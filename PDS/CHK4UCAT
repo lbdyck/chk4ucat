@@ -53,6 +53,7 @@ Check_vol:
       if strip(dsn) = '' then leave
       x = listdsi("'"strip(dsn)"'" 'NORECALL')
       if sysdsorg = 'VS' then iterate
+      if sysvolumes /= '' then
       if pos(vol,sysvolumes) = 0 then do
         say left(dsn,44) 'Cat Vol:' sysvolumes 'Curr Vol:' vol
         iterate

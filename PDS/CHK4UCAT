@@ -13,6 +13,7 @@
   | Author:    Lionel B. Dyck                                  |
   |                                                            |
   | History:  (most recent on top)                             |
+  |            2022/07/27 LBD - check if cataloged on mult vols|
   |            2022/07/25 LBD - Creation                       |
   |                                                            |
   * ---------------------------------------------------------- */
@@ -52,8 +53,8 @@ Check_vol:
       if strip(dsn) = '' then leave
       x = listdsi("'"strip(dsn)"'" 'NORECALL')
       if sysdsorg = 'VS' then iterate
-      if vol /= sysvolume then do
-        say left(dsn,44) 'Cat Vol:' sysvolume 'Curr Vol:' vol
+      if pos(vol,sysvolumes) = 0 then do
+        say left(dsn,44) 'Cat Vol:' sysvolumes 'Curr Vol:' vol
         iterate
       end
       if right(dsn,13) = 'VTOCIX.'vol then iterate
